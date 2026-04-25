@@ -32,7 +32,10 @@ import {
   Recycle,
   ChevronLeft,
   MessageCircle,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  Camera,
+  RefreshCw
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 
@@ -101,6 +104,27 @@ const services = [
       { tier: "Standard Cleanup", price: "Starting at $250", desc: "Typical backyard seasonal cleanup debris." },
       { tier: "Heavy Debris", price: "Starting at $400", desc: "Soil, sod, or concrete removal (weight limits apply)." },
       { tier: "Full Property", price: "Starting at $650", desc: "Complete yard transformation debris removal." }
+    ]
+  },
+  {
+    id: "moveout",
+    title: "After Move Out",
+    desc: "Seamless junk removal for tenants and homeowners across Glendale, Peoria, and Scottsdale. We clear everything left behind so you can focus on your move.",
+    items: ["Leftover Furniture", "Abandoned Boxes", "Kitchen Debris", "Cleaning Supplies"],
+    icon: <Truck className="text-teal-600" size={32} />,
+    link: "#quote",
+    details: "Moving is stressful enough. Our 'After Move Out' service is designed for rapid response in Peoria, Glendale, and Scottsdale. We handle the heavy lifting of abandoned items, ensuring properties are broom-clean for the next occupant.",
+    examples: [
+      "Peoria apartment move-out clears",
+      "Glendale house sale preparation",
+      "Scottsdale luxury rental cleanouts",
+      "Norterra townhome junk removal",
+      "Surprise relocation debris hauling"
+    ],
+    pricing: [
+      { tier: "Few Items", price: "Starting at $149", desc: "Removal of a few boxes and small furniture pieces." },
+      { tier: "Standard Room", price: "Starting at $249", desc: "Clearing out a full bedroom or kitchen's worth of leftovers." },
+      { tier: "Full Home Clear", price: "Custom Quote", desc: "Comprehensive junk removal for entire properties." }
     ]
   }
 ];
@@ -258,185 +282,28 @@ const JunkBackground = () => {
 // --- Logo Component using Gemini ---
 
 const Logo = ({ isScrolled }: { isScrolled: boolean }) => {
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [needsKey, setNeedsKey] = useState(false);
-
-  const generateLogo = async () => {
-    setLoading(true);
-    setNeedsKey(false);
-    try {
-      // Check if an API key has been selected for models that require it (like gemini-3.1-flash-image-preview)
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey) {
-          setNeedsKey(true);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Use the user-selected API key (process.env.API_KEY) for paid models, 
-      // or fallback to the platform key (process.env.GEMINI_API_KEY)
-      const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || '';
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-3.1-flash-image-preview',
-        contents: {
-          parts: [
-            {
-              text: 'Create a professional, high-resolution logo for a junk removal business called "RemoveALL". The logo should be inspired by a design that features a white stylized junk truck icon on the left, and the text "RemoveALL" in bold teal. The background must be completely transparent or solid black. The style should be clean, modern, and vector-like. No shadows, no gradients. Use teal (hex #0d9488) and white.',
-            },
-          ],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-            imageSize: "1K"
-          }
-        }
-      }));
-
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          setLogoUrl(`data:image/png;base64,${part.inlineData.data}`);
-          break;
-        }
-      }
-    } catch (error: any) {
-      console.error("Logo generation failed:", error);
-      if (error.message?.includes("403") || error.message?.includes("permission") || error.message?.includes("Requested entity was not found")) {
-        setNeedsKey(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectKey = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      generateLogo();
-    }
-  };
-
-  useEffect(() => {
-    generateLogo();
-  }, []);
-
-  if (needsKey) {
-    return (
-      <div className="flex flex-col items-start gap-2 bg-black/20 p-3 rounded-xl border border-white/10">
-        <p className="text-[10px] text-gray-300 max-w-[200px] leading-tight">
-          <span className="font-bold text-teal-400 block mb-1 uppercase tracking-wider">Premium Logo Generation</span>
-          This feature requires a paid Gemini API key from a Google Cloud project with billing enabled.
-          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-teal-400 hover:underline ml-1">Billing Docs</a>
-        </p>
-        <button 
-          onClick={handleSelectKey}
-          className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-all font-bold text-xs shadow-lg shadow-teal-600/20"
-        >
-          <Key size={14} />
-          Connect Paid API Key
-        </button>
-      </div>
-    );
-  }
-
-  if (!logoUrl) {
-    return (
-      <div className="flex items-center gap-3 group cursor-pointer" onClick={generateLogo}>
-        <div className="bg-teal-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
-          {loading ? <Loader2 className="text-white w-8 h-8 animate-spin" /> : <Trash2 className="text-white w-8 h-8" />}
-        </div>
-        <span className={`font-black text-2xl tracking-tight ${isScrolled ? 'text-black' : 'text-white'}`}>
-          Remove<span className="text-teal-600">ALL</span>
-        </span>
-      </div>
-    );
-  }
-
   return (
-    <img 
-      src={logoUrl} 
-      alt="RemoveALL Logo" 
-      className="h-12 md:h-16 w-auto object-contain"
-      referrerPolicy="no-referrer"
-    />
-  );
-};
-
-// --- Local Info Component using Google Maps Grounding ---
-
-const LocalInfo = () => {
-  const [info, setInfo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const fetchLocalInfo = async () => {
-    setLoading(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: "What are the most common junk removal needs in Scottsdale and Paradise Valley, AZ? Provide a brief, professional summary for a local business website.",
-        config: {
-          tools: [{ googleMaps: {} }],
-        },
-      });
-      setInfo(response.text);
-    } catch (error) {
-      console.error("Failed to fetch local info:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLocalInfo();
-  }, []);
-
-  return (
-    <motion.div 
-      variants={fadeIn}
-      initial="initial"
-      whileInView="whileInView"
-      viewport={fadeIn.viewport}
-      className="bg-gray-50 rounded-3xl p-8 border border-gray-100"
+    <Link 
+      to="/" 
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="flex items-center gap-3 group"
     >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-teal-100 p-2 rounded-lg">
-          <MapPin className="text-teal-600" size={24} />
+      <div className="flex flex-col leading-none items-center">
+        <span className={`text-2xl font-display font-black italic tracking-tighter ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
+          Remove-<span className="text-teal-500">ALL</span>
+        </span>
+        <div className="flex items-center gap-2 w-full">
+          <div className="h-[1px] flex-grow bg-teal-500/50"></div>
+          <span className={`text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap ${isScrolled ? 'text-gray-500' : 'text-gray-300'}`}>
+            Junk Removal
+          </span>
+          <div className="h-[1px] flex-grow bg-teal-500/50"></div>
         </div>
-        <h3 className="text-2xl font-bold text-gray-900">Local Insights</h3>
       </div>
-      
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="text-teal-600 animate-spin" size={32} />
-        </div>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="prose prose-teal max-w-none text-gray-600 leading-relaxed"
-        >
-          {info || "Loading local market data..."}
-        </motion.div>
-      )}
-      
-      <div className="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between">
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Powered by Google Maps Data</span>
-        <button 
-          onClick={fetchLocalInfo}
-          className="text-teal-600 font-bold text-sm hover:underline"
-        >
-          Refresh Data
-        </button>
-      </div>
-    </motion.div>
+    </Link>
   );
 };
+
 
 // --- Gallery Component using Nano Banana Pro ---
 
@@ -517,7 +384,7 @@ const Gallery = () => {
           viewport={fadeIn.viewport}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">SEE THE RESULTS</h2>
+          <h2 className="text-4xl font-display font-black text-gray-900 mb-4 tracking-tighter uppercase">See the Results</h2>
           <div className="w-20 h-1.5 bg-teal-600 mx-auto rounded-full"></div>
           <p className="mt-6 text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
             We transform cluttered spaces into clean, usable areas.
@@ -612,7 +479,7 @@ const Testimonials = () => {
   ];
 
   return (
-    <section id="reviews" className="py-16 md:py-24 bg-gray-50">
+    <section id="reviews" className="py-16 md:py-24 bg-slate-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
           variants={fadeIn}
@@ -621,7 +488,7 @@ const Testimonials = () => {
           viewport={fadeIn.viewport}
           className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 uppercase">What Our Clients Say</h2>
+          <h2 className="text-3xl md:text-4xl font-display font-black text-gray-900 mb-4 uppercase tracking-tighter">What Our Clients Say</h2>
           <div className="w-20 h-1.5 bg-teal-600 mx-auto rounded-full"></div>
           <p className="mt-6 text-xl text-gray-500 max-w-2xl mx-auto">
             Don't just take our word for it. We pride ourselves on 5-star service across the Valley.
@@ -640,17 +507,17 @@ const Testimonials = () => {
               key={i}
               variants={fadeIn}
               whileHover={{ y: -5 }}
-              className="p-8 rounded-3xl bg-white border border-gray-100 flex flex-col h-full transition-shadow hover:shadow-xl"
+              className="p-8 rounded-[2.5rem] bg-white border border-slate-200/60 flex flex-col h-full shadow-md hover:shadow-2xl transition-all duration-300"
             >
-              <div className="flex text-yellow-500 mb-4">
+              <div className="flex text-teal-600 mb-6">
                 {[...Array(review.rating)].map((_, i) => (
-                  <Star key={i} size={16} fill="currentColor" />
+                  <Star key={i} size={18} fill="currentColor" />
                 ))}
               </div>
-              <p className="text-gray-600 italic mb-6 flex-grow">"{review.quote}"</p>
+              <p className="text-gray-700 italic mb-8 flex-grow leading-relaxed text-lg">"{review.quote}"</p>
               <div>
-                <p className="font-bold text-gray-900">{review.name}</p>
-                <p className="text-sm text-teal-600 font-medium">{review.location}, AZ</p>
+                <p className="font-display font-black text-gray-900 uppercase tracking-wider">{review.name}</p>
+                <p className="text-sm text-teal-600 font-bold uppercase tracking-widest">{review.location}, AZ</p>
               </div>
             </motion.div>
           ))}
@@ -735,8 +602,11 @@ const TransformationSection = () => {
   const [images, setImages] = useState<{ before: string; after: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [needsKey, setNeedsKey] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const generateTransformation = async () => {
+  const generateTransformation = async (customFile?: string) => {
     setLoading(true);
     setNeedsKey(false);
     try {
@@ -751,19 +621,22 @@ const TransformationSection = () => {
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
       
-      // 1. Generate Before Image
-      const beforeResponse = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-3.1-flash-image-preview',
-        contents: { parts: [{ text: "A very cluttered, messy garage filled with old boxes, broken furniture, trash bags, and dusty junk. High resolution, realistic lighting." }] },
-        config: { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }
-      }));
+      let beforeBase64 = customFile ? customFile.split(',')[1] : '';
 
-      let beforeBase64 = '';
-      for (const part of beforeResponse.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) beforeBase64 = part.inlineData.data;
+      if (!beforeBase64) {
+        // 1. Generate Random Before Image if none provided
+        const beforeResponse = await withRetry(() => ai.models.generateContent({
+          model: 'gemini-3.1-flash-image-preview',
+          contents: { parts: [{ text: "A very cluttered, messy garage filled with old boxes, broken furniture, trash bags, and dusty junk. High resolution, realistic lighting." }] },
+          config: { imageConfig: { aspectRatio: "16:9", imageSize: "1K" } }
+        }));
+
+        for (const part of beforeResponse.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) beforeBase64 = part.inlineData.data;
+        }
       }
 
-      if (!beforeBase64) throw new Error("Failed to generate before image");
+      if (!beforeBase64) throw new Error("Failed to provide or generate before image");
 
       // 2. Generate After Image using Before Image as reference
       const afterResponse = await withRetry(() => ai.models.generateContent({
@@ -777,7 +650,7 @@ const TransformationSection = () => {
               }
             },
             {
-              text: "Completely remove all the junk, boxes, and furniture from this exact garage. The space should be entirely empty, clean, and organized. Keep the walls, floor, and ceiling structure identical to the provided image. High resolution, realistic lighting."
+              text: "Completely remove all the junk, boxes, and furniture from this exact space. The space should be entirely empty, pristine clean, and professionally organized. Keep the underlying architectural structure (walls, floor, ceiling, windows, doors) identical to the provided image. High resolution, professional photography style."
             }
           ]
         },
@@ -791,9 +664,10 @@ const TransformationSection = () => {
 
       if (beforeBase64 && afterBase64) {
         setImages({ 
-          before: `data:image/png;base64,${beforeBase64}`, 
+          before: customFile || `data:image/png;base64,${beforeBase64}`, 
           after: `data:image/png;base64,${afterBase64}` 
         });
+        setPreviewImage(null);
       }
     } catch (error: any) {
       console.error("Transformation generation failed:", error);
@@ -803,6 +677,42 @@ const TransformationSection = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    setPreviewImage(null);
+    setImages(null);
+
+    const reader = new FileReader();
+    
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
+
+    reader.onload = async (event) => {
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      const base64 = event.target?.result as string;
+      setPreviewImage(base64);
+      setUploading(false);
+      
+      setTimeout(() => {
+        generateTransformation(base64);
+      }, 500);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSelectKey = async () => {
@@ -826,37 +736,59 @@ const TransformationSection = () => {
             whileInView="whileInView"
             viewport={staggerContainer.viewport}
           >
-            <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-black mb-6 leading-tight uppercase">
+            <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-display font-black mb-6 leading-tight uppercase tracking-tighter">
               The <span className="text-teal-500">Transformation</span> is Real.
             </motion.h2>
             <motion.p variants={fadeIn} className="text-xl text-gray-400 mb-8 leading-relaxed">
-              Don't just imagine a clean space—see it for yourself. Our team specializes in complete property transformations, turning cluttered chaos into pristine environments.
+              Don't just imagine a clean space—see it for yourself. Our AI-powered tool can visualize your cluttered space completely cleared in seconds.
             </motion.p>
             
-            <motion.ul variants={staggerContainer} className="space-y-4 mb-10">
-              {[
-                "Full Property Cleanouts",
-                "Eco-Friendly Disposal",
-                "Same-Day Service Available",
-                "Licensed & Insured Team"
-              ].map((item, i) => (
-                <motion.li key={i} variants={fadeIn} className="flex items-center gap-3 text-gray-300">
-                  <CheckCircle className="text-teal-500" size={20} />
-                  <span className="font-medium">{item}</span>
-                </motion.li>
-              ))}
-            </motion.ul>
+            <div className="space-y-6 mb-10">
+              <motion.div variants={fadeIn} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <Upload size={20} className="text-teal-500" />
+                  Try it with your space
+                </h4>
+                <p className="text-sm text-gray-500 mb-6">Upload a photo of your cluttered garage, room, or yard to see the "After" effect.</p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <label className="flex-1 cursor-pointer group">
+                    <div className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-xl transition-all">
+                      <Camera size={20} />
+                      {uploading ? "Processing..." : "UPLOAD PHOTO"}
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleFileUpload}
+                      disabled={loading || uploading}
+                    />
+                  </label>
+                  <button 
+                    onClick={() => generateTransformation()}
+                    className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+                    SHUFFLE EXAMPLE
+                  </button>
+                </div>
+              </motion.div>
 
-            <motion.button 
-              variants={fadeIn}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={generateTransformation}
-              className="text-teal-500 font-bold flex items-center gap-2 hover:text-teal-400 transition-colors"
-            >
-              <Clock size={20} />
-              Generate New Example
-            </motion.button>
+              <motion.ul variants={staggerContainer} className="space-y-4">
+                {[
+                  "Full Property Cleanouts",
+                  "Eco-Friendly Disposal",
+                  "Same-Day Service Available",
+                  "100% Satisfaction Guaranteed"
+                ].map((item, i) => (
+                  <motion.li key={i} variants={fadeIn} className="flex items-center gap-3 text-gray-300">
+                    <CheckCircle className="text-teal-500" size={20} />
+                    <span className="font-medium">{item}</span>
+                  </motion.li>
+                ))}
+              </motion.ul>
+            </div>
           </motion.div>
 
           <motion.div 
@@ -871,7 +803,7 @@ const TransformationSection = () => {
                 <Key className="text-teal-500" size={48} />
                 <h3 className="text-xl font-bold">API Key Required</h3>
                 <p className="text-gray-400 text-sm max-w-xs">
-                  A paid Gemini API key is required to generate transformation examples.
+                  A paid Gemini API key is required to use the AI transformation tool.
                 </p>
                 <button 
                   onClick={handleSelectKey}
@@ -880,36 +812,74 @@ const TransformationSection = () => {
                   Select API Key
                 </button>
               </div>
+            ) : uploading ? (
+              <div className="aspect-video bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-6 border border-white/10 p-8">
+                <div className="w-full max-w-md">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-teal-500 font-bold text-xs uppercase tracking-widest">Uploading Photo</span>
+                    <span className="text-teal-500 font-bold text-xs">{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                      className="h-full bg-teal-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-gray-500 text-sm animate-pulse">Preparing your image for visualization...</p>
+              </div>
             ) : loading ? (
-              <div className="aspect-video bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-4 border border-white/10">
-                <Loader2 className="text-teal-500 animate-spin" size={48} />
-                <p className="text-gray-500 font-medium animate-pulse">Visualizing transformation...</p>
+              <div className="aspect-video bg-white/5 rounded-3xl flex flex-col items-center justify-center gap-4 border border-white/10 relative overflow-hidden">
+                {previewImage && (
+                  <motion.img 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.3 }}
+                    src={previewImage}
+                    className="absolute inset-0 w-full h-full object-cover blur-sm"
+                  />
+                )}
+                <div className="relative z-10 flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Trash2 className="text-teal-500 w-6 h-6" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-400 font-bold animate-pulse uppercase tracking-widest text-sm">
+                      Removing Clutter...
+                    </p>
+                    <p className="text-xs text-gray-600 italic">Clearing space using AI Vision</p>
+                  </div>
+                </div>
+                
+                {/* Visual Scanning Effect */}
+                <motion.div 
+                  animate={{ top: ['0%', '100%', '0%'] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="absolute left-0 right-0 h-1 bg-teal-500/50 shadow-[0_0_15px_rgba(20,184,166,0.5)] z-20"
+                />
               </div>
             ) : images ? (
               <BeforeAfterSlider before={images.before} after={images.after} />
             ) : (
               <div className="aspect-video bg-white/5 rounded-3xl flex items-center justify-center border border-white/10">
-                <button onClick={generateTransformation} className="text-teal-500 font-bold">Load Transformation</button>
+                <button onClick={() => generateTransformation()} className="text-teal-500 font-bold uppercase tracking-widest hover:underline">
+                  Start Transformation
+                </button>
               </div>
             )}
             
             {/* Decorative Elements */}
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.2, 0.3, 0.2]
-              }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute -top-6 -right-6 w-24 h-24 bg-teal-600/20 rounded-full blur-3xl"
-            ></motion.div>
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.3, 1],
-                opacity: [0.1, 0.2, 0.1]
-              }}
-              transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-              className="absolute -bottom-6 -left-6 w-32 h-32 bg-teal-600/10 rounded-full blur-3xl"
-            ></motion.div>
+            <div className="absolute -bottom-4 -left-4 bg-teal-600 text-white p-3 rounded-xl shadow-xl z-20 hidden md:block">
+              <div className="text-xs font-bold uppercase tracking-tight">AI Vision</div>
+              <div className="text-[10px] opacity-75">Clearing technology v3.1</div>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -937,39 +907,39 @@ const Navbar = () => {
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
           {['Services'].map((item) => (
-            <a 
+            <Link 
               key={item} 
-              href={`#/#${item.toLowerCase()}`}
-              className={`text-sm font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
+              to={`/${item.toLowerCase()}`}
+              className={`text-xs font-display font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
             >
               {item}
-            </a>
+            </Link>
           ))}
 
           {/* About Dropdown */}
           <div className="relative group">
-            <button className={`flex items-center gap-1 text-sm font-black uppercase tracking-widest hover:text-teal-600 transition-colors cursor-pointer ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}>
+            <button className={`flex items-center gap-1 text-xs font-display font-black uppercase tracking-widest hover:text-teal-600 transition-colors cursor-pointer ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}>
               About <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
             </button>
             <div className="absolute top-full left-0 mt-4 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 py-3 z-50">
-              <a href="#/#about" className="block px-6 py-3 text-sm font-bold text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-colors uppercase tracking-wider">Our Story</a>
-              <a href="#/#process" className="block px-6 py-3 text-sm font-bold text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-colors uppercase tracking-wider">Our Process</a>
+              <Link to="/about" className="block px-6 py-3 text-xs font-display font-bold text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-colors uppercase tracking-widest">Our Story</Link>
+              <Link to="/process" className="block px-6 py-3 text-xs font-display font-bold text-gray-700 hover:text-teal-600 hover:bg-gray-50 transition-colors uppercase tracking-widest">Our Process</Link>
             </div>
           </div>
 
-          {['Reviews', 'Areas', 'FAQ', 'Contact'].map((item) => (
-            <a 
+          {['Areas', 'Contact'].map((item) => (
+            <Link 
               key={item} 
-              href={`#/#${item.toLowerCase() === 'contact' ? 'callback' : item.toLowerCase()}`} 
-              className={`text-sm font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
+              to={`/${item.toLowerCase() === 'contact' ? 'callback' : item.toLowerCase()}`} 
+              className={`text-xs font-display font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
             >
               {item}
-            </a>
+            </Link>
           ))}
 
           <Link 
             to="/blog"
-            className={`text-sm font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
+            className={`text-xs font-display font-black uppercase tracking-widest hover:text-teal-600 transition-colors ${isScrolled ? 'text-gray-700' : 'text-white/90'}`}
           >
             Blog
           </Link>
@@ -1013,24 +983,22 @@ const Navbar = () => {
               }}
               className="px-4 py-8 space-y-6"
             >
-              {['Services', 'About', 'Process', 'Reviews', 'Areas', 'FAQ', 'Contact'].map((item) => (
-                <motion.a 
-                  key={item} 
-                  href={`#/${item.toLowerCase() === 'contact' ? '#callback' : '#' + item.toLowerCase()}`} 
+              {['Services', 'About', 'Process', 'Areas', 'Contact'].map((item) => (
+                <motion.div
+                  key={item}
                   variants={{
                     initial: { opacity: 0, x: -20 },
                     animate: { opacity: 1, x: 0 }
                   }}
-                  className={`block ${item === 'Process' ? 'pl-8 text-xl text-gray-500' : 'text-2xl'} font-black text-gray-900 tracking-tight hover:text-teal-600 transition-colors`}
-                  onClick={(e) => {
-                    setIsMobileMenuOpen(false);
-                    if (window.location.hash.startsWith('#/') && window.location.hash.length > 2 && !window.location.hash.includes('blog') && !window.location.hash.includes('service')) {
-                      // Already on home, let normal anchor work if possible
-                    }
-                  }}
                 >
-                  {item}
-                </motion.a>
+                  <Link 
+                    to={`/${item.toLowerCase() === 'contact' ? 'callback' : item.toLowerCase()}`} 
+                    className={`block ${item === 'Process' ? 'pl-8 text-xl text-gray-500' : 'text-2xl'} font-display font-black text-gray-900 tracking-tighter hover:text-teal-600 transition-colors uppercase`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item}
+                  </Link>
+                </motion.div>
               ))}
               <motion.div 
                 variants={{
@@ -1040,7 +1008,7 @@ const Navbar = () => {
               >
                 <Link 
                   to="/blog" 
-                  className="block text-2xl font-black text-gray-900 tracking-tight hover:text-teal-600 transition-colors"
+                  className="block text-4xl font-display font-black text-gray-900 tracking-tighter hover:text-teal-600 transition-colors uppercase"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Blog
@@ -1099,11 +1067,32 @@ const Hero = () => {
             <CheckCircle size={16} />
             #1 Junk Removal in Arizona
           </motion.div>
+          <motion.div
+            variants={fadeIn}
+            className="mb-12 relative w-full flex justify-center lg:justify-start"
+          >
+            <div className="absolute inset-0 bg-teal-500/20 blur-[120px] rounded-full" />
+            <div className="relative z-10 flex flex-col items-center lg:items-start">
+              <span className="text-6xl sm:text-8xl md:text-9xl font-display font-black italic text-white tracking-tighter drop-shadow-2xl">
+                Remove-<span className="text-teal-500">ALL</span>
+              </span>
+              <div className="flex items-center gap-4 w-full mt-2">
+                <div className="h-1 flex-grow bg-teal-500/40"></div>
+                <span className="text-sm sm:text-lg font-black uppercase tracking-[0.4em] text-gray-300 whitespace-nowrap">
+                  Junk Removal
+                </span>
+                <div className="h-1 flex-grow bg-teal-500/40"></div>
+              </div>
+            </div>
+          </motion.div>
+
           <motion.h1 
             variants={fadeIn}
-            className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-tight mb-6"
+            className="font-display font-black text-white leading-tight mb-6"
           >
-            SCOTTSDALE & PHX <span className="text-teal-500">JUNK</span> REMOVAL.
+            <span className="text-4xl sm:text-5xl md:text-6xl block opacity-90 uppercase tracking-tighter">
+              Reclaim Your <span className="text-teal-500">SPACE</span>
+            </span>
           </motion.h1>
           <motion.p 
             variants={fadeIn}
@@ -1125,7 +1114,7 @@ const Hero = () => {
               transition={{ 
                 boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
               }}
-              href="#quote" 
+              href="#/quote" 
               className="bg-teal-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl hover:bg-teal-600 transition-all flex items-center justify-center gap-3 group shadow-2xl shadow-teal-500/40"
             >
               BOOK NOW
@@ -1420,7 +1409,7 @@ const CallbackRequest = () => {
   return (
     <section id="callback" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gray-50 rounded-[3rem] p-8 md:p-16 border border-gray-100 shadow-xl overflow-hidden relative">
+        <div className="bg-slate-50/80 rounded-[4rem] p-8 md:p-16 border border-slate-200 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden relative">
           {/* Decorative background element */}
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-teal-600/5 rounded-full blur-3xl"></div>
           
@@ -1431,7 +1420,7 @@ const CallbackRequest = () => {
               whileInView="whileInView"
               viewport={staggerContainer.viewport}
             >
-              <motion.h2 variants={fadeIn} className="text-3xl md:text-5xl font-black text-gray-900 mb-6 leading-tight uppercase">
+              <motion.h2 variants={fadeIn} className="text-3xl md:text-5xl font-display font-black text-gray-900 mb-6 leading-tight uppercase tracking-tighter">
                 NEED A <span className="text-teal-600">CALLBACK</span>?
               </motion.h2>
               <motion.p variants={fadeIn} className="text-xl text-gray-600 mb-8 leading-relaxed">
@@ -1440,20 +1429,20 @@ const CallbackRequest = () => {
               
               <motion.div variants={fadeIn} className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="bg-teal-600/10 p-3 rounded-xl">
+                  <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100">
                     <Phone className="text-teal-600" size={24} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900">Expert Consultation</h4>
+                    <h4 className="font-black text-gray-900 uppercase tracking-tight">Expert Consultation</h4>
                     <p className="text-gray-500">Get answers to specific project questions.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="bg-teal-600/10 p-3 rounded-xl">
+                  <div className="bg-white p-4 rounded-2xl shadow-md border border-slate-100">
                     <Clock className="text-teal-600" size={24} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900">Convenient Scheduling</h4>
+                    <h4 className="font-black text-gray-900 uppercase tracking-tight">Convenient Scheduling</h4>
                     <p className="text-gray-500">We call you when it fits your day.</p>
                   </div>
                 </div>
@@ -1465,41 +1454,41 @@ const CallbackRequest = () => {
               initial="initial"
               whileInView="whileInView"
               viewport={scaleIn.viewport}
-              className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-gray-100"
+              className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100"
             >
-              <form className="space-y-5">
+              <form className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Full Name</label>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
                   <input 
                     type="text" 
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium" 
-                    placeholder="Your name" 
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl px-6 py-5 outline-none transition-all font-black uppercase tracking-tight text-gray-900" 
+                    placeholder="E.G. JOHN SMITH" 
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
                   <input 
                     type="tel" 
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium" 
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl px-6 py-5 outline-none transition-all font-black tracking-widest text-gray-900" 
                     placeholder="(602) 000-0000" 
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Preferred Date & Time</label>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Preferred Date & Time</label>
                   <DatePicker
                     selected={selectedDate}
                     onChange={(date: Date | null) => setSelectedDate(date)}
                     showTimeSelect
                     dateFormat="Pp"
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium"
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl px-6 py-5 outline-none transition-all font-black text-gray-900"
                     wrapperClassName="w-full"
                     minDate={new Date()}
                   />
                 </div>
 
-                <button type="button" className="w-full bg-teal-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-teal-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-teal-600/20 uppercase tracking-widest mt-4">
+                <button type="button" className="w-full bg-teal-600 text-white py-6 rounded-2xl font-display font-black text-xl hover:bg-teal-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-teal-600/30 uppercase tracking-widest mt-4">
                   Request Callback
                 </button>
               </form>
@@ -1542,7 +1531,7 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-24 bg-gray-50">
+    <section id="faq" className="py-24 bg-slate-50/50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
           variants={fadeIn} 
@@ -1550,10 +1539,10 @@ const FAQ = () => {
           whileInView="whileInView" 
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 uppercase tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-display font-black text-gray-900 mb-6 uppercase tracking-tighter">
             Frequently Asked <span className="text-teal-600">Questions</span>
           </h2>
-          <p className="text-xl text-gray-600">Everything you need to know about our local hauling services.</p>
+          <p className="text-xl text-gray-600 font-medium">Everything you need to know about our local hauling services.</p>
         </motion.div>
 
         <div className="space-y-4">
@@ -1564,15 +1553,15 @@ const FAQ = () => {
               initial="initial"
               whileInView="whileInView"
               viewport={{ once: true }}
-              className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+              className="bg-white rounded-[2rem] border border-slate-200 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
             >
               <button 
                 onClick={() => toggleFAQ(index)}
-                className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                className="w-full px-8 py-8 flex items-center justify-between text-left group"
                 id={`faq-button-${index}`}
               >
-                <span className="text-lg font-bold text-gray-900 pr-8">{faq.question}</span>
-                <div className={`text-teal-600 transition-transform duration-300 ${activeIndex === index ? 'rotate-180' : ''}`}>
+                <span className="text-xl font-display font-black text-gray-900 tracking-tight group-hover:text-teal-600 transition-colors uppercase">{faq.question}</span>
+                <div className={`p-3 rounded-full transition-all duration-300 ${activeIndex === index ? 'bg-teal-600 text-white rotate-180' : 'bg-slate-50 text-teal-600 group-hover:bg-teal-50'}`}>
                   <ChevronDown size={24} />
                 </div>
               </button>
@@ -1585,7 +1574,7 @@ const FAQ = () => {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
-                    <div className="px-8 pb-8 text-gray-600 leading-relaxed">
+                    <div className="px-8 pb-8 text-gray-600 text-lg leading-relaxed border-t border-slate-50 pt-6">
                       {faq.answer}
                     </div>
                   </motion.div>
@@ -1603,7 +1592,7 @@ const Services = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="services" className="py-16 md:py-24 bg-gray-50">
+    <section id="services" className="py-16 md:py-24 bg-slate-100/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
           variants={fadeIn}
@@ -1612,7 +1601,7 @@ const Services = () => {
           viewport={fadeIn.viewport}
           className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 tracking-tight uppercase">Our Services</h2>
+          <h2 className="text-3xl md:text-4xl font-display font-black text-gray-900 mb-4 tracking-tight uppercase">Our Services</h2>
           <div className="w-20 h-1.5 bg-teal-600 mx-auto rounded-full"></div>
           <p className="mt-6 text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
             We provide comprehensive removal solutions tailored to your needs, ensuring every item is handled responsibly.
@@ -1635,7 +1624,7 @@ const Services = () => {
               }}
               whileHover="hover"
               onClick={() => navigate(`/service/${s.id}`)}
-              className="p-8 rounded-[2.5rem] bg-white border border-gray-100 hover:shadow-2xl transition-all duration-500 group flex flex-col h-full cursor-pointer"
+              className="p-8 rounded-[2.5rem] bg-white border border-gray-200/60 hover:border-teal-500/30 hover:shadow-2xl transition-all duration-500 group flex flex-col h-full cursor-pointer shadow-sm"
             >
               <div className="mb-6 w-16 h-16 bg-teal-600/10 rounded-2xl flex items-center justify-center group-hover:bg-teal-600/20 transition-all duration-300">
                 <motion.div
@@ -1675,15 +1664,6 @@ const Services = () => {
           ))}
         </motion.div>
 
-        <motion.div 
-          variants={fadeIn}
-          initial="initial"
-          whileInView="whileInView"
-          viewport={fadeIn.viewport}
-          className="max-w-4xl mx-auto"
-        >
-          <LocalInfo />
-        </motion.div>
       </div>
     </section>
   );
@@ -1718,7 +1698,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section id="process" className="py-16 md:py-24 bg-gray-900 overflow-hidden">
+    <section id="process" className="py-16 md:py-24 bg-black overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div 
           variants={fadeIn}
@@ -1727,7 +1707,7 @@ const HowItWorks = () => {
           viewport={fadeIn.viewport}
           className="text-center mb-12 md:mb-20"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 tracking-tight uppercase">How It Works</h2>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-black text-white mb-6 tracking-tight uppercase">How It Works</h2>
           <div className="w-24 h-2 bg-teal-600 mx-auto rounded-full"></div>
           <p className="mt-8 text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Simple, transparent, and stress-free junk removal in four easy steps.
@@ -1781,7 +1761,12 @@ const ServiceAreas = () => {
     { name: "Scottsdale", lat: 33.4942, lng: -111.9261 },
     { name: "Paradise Valley", lat: 33.5311, lng: -111.9426 },
     { name: "North Phoenix", lat: 33.6534, lng: -112.0740 },
-    { name: "Arcadia", lat: 33.4942, lng: -111.9561 }
+    { name: "Arcadia", lat: 33.4942, lng: -111.9561 },
+    { name: "Sun City", lat: 33.6067, lng: -112.2721 },
+    { name: "Glendale", lat: 33.5387, lng: -112.1860 },
+    { name: "Surprise", lat: 33.6292, lng: -112.3679 },
+    { name: "Norterra", lat: 33.7259, lng: -112.0838 },
+    { name: "Peoria", lat: 33.5806, lng: -112.2374 }
   ];
 
   // Fix Leaflet's default icon issue
@@ -1795,7 +1780,7 @@ const ServiceAreas = () => {
   }, []);
   
   return (
-    <section id="areas" className="py-16 md:py-24 lg:py-32 bg-gray-900 text-white overflow-hidden">
+    <section id="areas" className="py-16 md:py-24 lg:py-32 bg-zinc-950 text-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 md:gap-24 items-center">
           <motion.div
@@ -1807,7 +1792,7 @@ const ServiceAreas = () => {
           >
             <motion.h2 
               variants={fadeIn}
-              className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 leading-tight tracking-tight uppercase"
+              className="text-3xl md:text-4xl lg:text-5xl font-display font-black mb-8 leading-tight tracking-tighter uppercase"
             >
               We Serve The <span className="text-teal-500 italic">Valley</span>
             </motion.h2>
@@ -1826,13 +1811,13 @@ const ServiceAreas = () => {
                 <motion.div 
                   key={i} 
                   variants={fadeIn}
-                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
-                  className="flex items-center gap-4 bg-white/5 p-5 md:p-6 rounded-3xl border border-white/10 transition-colors"
+                  whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.05)" }}
+                  className="flex items-center gap-4 bg-zinc-900 shadow-xl p-5 md:p-6 rounded-[2rem] border border-zinc-800 transition-all group"
                 >
-                  <div className="bg-teal-600/20 p-2 rounded-lg">
+                  <div className="bg-teal-600/10 p-3 rounded-2xl group-hover:bg-teal-600/20 transition-colors">
                     <MapPin className="text-teal-500" size={20} />
                   </div>
-                  <span className="font-bold text-lg tracking-tight">{area.name}</span>
+                  <span className="font-display font-black uppercase tracking-widest text-xs text-zinc-200">{area.name}</span>
                 </motion.div>
               ))}
             </motion.div>
@@ -1859,15 +1844,16 @@ const ServiceAreas = () => {
             viewport={scaleIn.viewport}
             className="relative h-[350px] md:h-[500px] lg:h-[600px] mt-12 lg:mt-0"
           >
-            <div className="w-full h-full rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white/5 relative z-10">
+            <div className="absolute inset-0 bg-teal-500/10 blur-[100px] rounded-full" />
+            <div className="w-full h-full rounded-[3.5rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border-4 border-zinc-800 relative z-10">
               <MapContainer 
-                center={[33.55, -111.98]} 
-                zoom={11} 
+                center={[33.6, -112.1]} 
+                zoom={10} 
                 style={{ height: '100%', width: '100%' }}
                 scrollWheelZoom={false}
               >
                 <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
                 {areas.map((area, i) => (
@@ -1918,13 +1904,13 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-lg mb-6">Quick Links</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">Services</Link></li>
+              <li><Link to="/services" className="hover:text-teal-500 transition-colors">Services</Link></li>
               <li><Link to="/blog" className="hover:text-teal-500 transition-colors">Environment Blog</Link></li>
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">Transformation</Link></li>
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">Reviews</Link></li>
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">FAQ</Link></li>
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">Contact Us</Link></li>
-              <li><Link to="/" className="hover:text-teal-500 transition-colors">Service Areas</Link></li>
+              <li><Link to="/about" className="hover:text-teal-500 transition-colors">Transformation</Link></li>
+              <li><Link to="/reviews" className="hover:text-teal-500 transition-colors">Reviews</Link></li>
+              <li><Link to="/faq" className="hover:text-teal-500 transition-colors">FAQ</Link></li>
+              <li><Link to="/callback" className="hover:text-teal-500 transition-colors">Contact Us</Link></li>
+              <li><Link to="/areas" className="hover:text-teal-500 transition-colors">Service Areas</Link></li>
             </ul>
           </div>
 
@@ -1958,24 +1944,30 @@ const Footer = () => {
 };
 
 function Home() {
+  const { section } = useParams();
+
   useEffect(() => {
-    const hash = window.location.hash.split('#')[2];
-    if (hash) {
-      const element = document.getElementById(hash);
+    if (section) {
+      const element = document.getElementById(section);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        // Delay slightly to ensure content is rendered
+        const timer = setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        return () => clearTimeout(timer);
       }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, []);
+  }, [section]);
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-teal-100 selection:text-teal-900">
       <Navbar />
       <Hero />
+      <TransformationSection />
       <Services />
       <HowItWorks />
-      <Gallery />
-      <TransformationSection />
       <Testimonials />
       <FAQ />
       <CallbackRequest />
@@ -1998,7 +1990,7 @@ function Home() {
             whileInView="whileInView"
             viewport={staggerContainer.viewport}
           >
-            <motion.h2 variants={fadeIn} className="text-4xl md:text-5xl font-black text-white mb-8">READY TO CLEAR THE CLUTTER?</motion.h2>
+            <motion.h2 variants={fadeIn} className="text-4xl md:text-5xl font-display font-black text-white mb-6 uppercase">Ready to clear the clutter?</motion.h2>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-6 justify-center">
               <motion.a 
                 whileHover={{ scale: 1.05 }}
@@ -2012,7 +2004,7 @@ function Home() {
               <motion.a 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                href="#quote" 
+                href="#/quote" 
                 className="bg-black text-white px-10 py-5 rounded-2xl font-black text-xl hover:bg-gray-900 transition-all shadow-2xl flex items-center justify-center gap-3"
               >
                 BOOK ONLINE
@@ -2034,9 +2026,10 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/service/:serviceId" element={<ServiceDetail />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:postId" element={<BlogPost />} />
+        <Route path="/service/:serviceId" element={<ServiceDetail />} />
+        <Route path="/:section" element={<Home />} />
       </Routes>
     </HashRouter>
   );
@@ -2134,7 +2127,7 @@ const BlogPost = () => {
             <h3 className="text-3xl font-black text-gray-900 mb-6 uppercase">Ready to clear the clutter?</h3>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Get a professional, eco-friendly quote today for your home or business in the Phoenix Metro area.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/#quote" className="bg-teal-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20">
+              <Link to="/quote" className="bg-teal-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20">
                 Get Instant Quote
               </Link>
               <a href="tel:6025014109" className="bg-black text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-900 transition-all">
